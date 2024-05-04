@@ -15,7 +15,9 @@ namespace CalculateDemo.ServerTests.Controllers
                 ("12 + 31 - 5 * 2", 33f),
                 ("12 - 5 * 2", 2f),
                 ("1.2 * 3 - 0.6 * 5", 0.6f),
-                ("12 - 5 * 2.4", 0f)
+                ("12 - 5 * 2.4", 0f),
+                ("(12 - 2) * 2.4", 24f),
+                ("(12 - 2) / (2 + 3)", 2f)
             };
             successStrArray.ForEach(x =>
             {
@@ -34,7 +36,11 @@ namespace CalculateDemo.ServerTests.Controllers
                 "12+14/2a - x",
                 "12 + 31 - 5 * 2 / Pi",
                 "12 * 3 - 6 * 5 Ln(10)",
+                "(12 - 2) / (2 + 3))",
+                "(12 - 2 / (2 + 3)",
+                "(12 - 2 / 2 + 3",
                 "asdfghjkl",
+                new('9', 100),
                 "",
                 "/",
                 "**.-+"

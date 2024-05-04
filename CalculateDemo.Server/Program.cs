@@ -12,20 +12,31 @@ try
 }
 catch (Exception exception)
 {
-    // NLog: catch setup errors
     logger.Error(exception, "Stopped program because of exception");
     throw;
 }
 finally
 {
     logger.Debug("Application has ended");
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
     LogManager.Shutdown();
 }
 void BuildServicesAndApp()
 {
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseNLog();
+    builder
+        .WebHost
+        .ConfigureKestrel(serverOptions =>
+        {
+            var strSize = builder.Configuration["FormOptions:MultipartBodyLengthLimit"];
+            long.TryParse(strSize, out var size);
+            if (size == 0)
+            {
+                size = 10_000;
+            }
+
+            serverOptions.Limits.MaxRequestBodySize = size;
+        });
 
     BuildServices(builder);
 
