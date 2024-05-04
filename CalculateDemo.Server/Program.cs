@@ -12,20 +12,32 @@ try
 }
 catch (Exception exception)
 {
-    // NLog: catch setup errors
     logger.Error(exception, "Stopped program because of exception");
     throw;
 }
 finally
 {
     logger.Debug("Application has ended");
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
     LogManager.Shutdown();
 }
 void BuildServicesAndApp()
 {
     var builder = WebApplication.CreateBuilder(args);
-   
+    builder.Host.UseNLog();
+    builder
+        .WebHost
+        .ConfigureKestrel(serverOptions =>
+        {
+            var strSize = builder.Configuration["FormOptions:MultipartBodyLengthLimit"];
+            long.TryParse(strSize, out var size);
+            if (size == 0)
+            {
+                size = 10_000;
+            }
+
+            serverOptions.Limits.MaxRequestBodySize = size;
+        });
+
     BuildServices(builder);
 
     var app = builder.Build();
@@ -47,16 +59,16 @@ void BuildServices(IHostApplicationBuilder builder)
     AddCorsServiceForDevelopment(services);
     AddIpRateLimitationService(services);
 
-    services.AddHttpLogging(logging => { logger.Info("logging");});
-    //{
-    //    logging.LoggingFields = HttpLoggingFields.All;
-    //    logging.RequestHeaders.Add("sec-ch-ua");
-    //    logging.ResponseHeaders.Add("MyResponseHeader");
-    //    logging.MediaTypeOptions.AddText("application/javascript");
-    //    logging.RequestBodyLogLimit = 4096;
-    //    logging.ResponseBodyLogLimit = 4096;
-    //    logging.CombineLogs = true;
-    //});
+    services.AddHttpLogging(logging =>
+    {
+        logging.LoggingFields = HttpLoggingFields.All;
+        logging.RequestHeaders.Add("sec-ch-ua");
+        logging.ResponseHeaders.Add("MyResponseHeader");
+        logging.MediaTypeOptions.AddText("application/javascript");
+        logging.RequestBodyLogLimit = 4096;
+        logging.ResponseBodyLogLimit = 4096;
+        logging.CombineLogs = true;
+    });
 }
 
 void AddCorsServiceForDevelopment(IServiceCollection services)

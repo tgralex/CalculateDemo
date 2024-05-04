@@ -20,7 +20,17 @@ public class CalculateController : ControllerBase
         var expression = expressionObj.Expression;
         _logger.LogInformation(expression);
         await Task.Delay(100); // this is just to emulate a small delay on execution - TA
-        return Ok(new Calculation(expression));
+        Calculation calc;
+        try
+        {
+            calc = new Calculation(expression);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Exception on calculation attempt for expression:{expression}");
+            calc = new Calculation();
+        }
+        return Ok(calc);
     }
     
     [HttpGet("/Test")]

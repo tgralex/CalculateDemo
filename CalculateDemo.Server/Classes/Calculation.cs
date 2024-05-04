@@ -6,7 +6,7 @@ public class Calculation
 {
     public bool CalculationSuccess { get; set; }
     public float? CalculationResult { get; set; }
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage { get; set; } = "Calculation has failed";
 
     public Calculation(string expression)
     {
@@ -20,15 +20,20 @@ public class Calculation
         var tokens = expression.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
         CalculationSuccess = TryEvaluateExpression(tokens, out var result);
-        if (CalculationSuccess)
+        if (CalculationSuccess &&
+            !double.IsInfinity(result) &&
+            !double.IsNaN(result)
+            )
         {
             CalculationResult = result;
+            ErrorMessage = null;
+            return;
         }
-        else
-        {
-            ErrorMessage = "Calculation has failed";
-        }
+        // we switch back to "Error" if the result of calculation was infinity or NaN
+        CalculationSuccess = false;
     }
+
+    public Calculation() { }
 
     private static int GetPrecedence(string op)
     {
@@ -93,61 +98,71 @@ public class Calculation
             result = 0;
             return false;
         }
-        // if it starts with a sign first (unary op), we simply add "0" at the beginning and process as binary op
-        if ("+-".Contains(tokens.First()))
+
+        try
         {
-            tokens.Insert(0, "0");
-        }
-        var postfix = InfixToPostfix(tokens);
-        var stack = new Stack<float>();
-
-        foreach (var token in postfix)
-        {
-            if (float.TryParse(token, out var num))
+            // if it starts with a sign first (unary op), we simply add "0" at the beginning and process as binary op
+            if ("+-".Contains(tokens.First()))
             {
-                stack.Push(num);
+                tokens.Insert(0, "0");
             }
-            else
+            var postfix = InfixToPostfix(tokens);
+            var stack = new Stack<float>();
+
+            foreach (var token in postfix)
             {
-                if (stack.Count < 2)
+                if (float.TryParse(token, out var num))
                 {
-                    result = 0;
-                    return false;
+                    stack.Push(num);
                 }
-
-                var second = stack.Pop();
-                var first = stack.Pop();
-
-                switch (token)
+                else
                 {
-                    case "+":
-                        stack.Push(first + second);
-                        break;
-                    case "-":
-                        stack.Push(first - second);
-                        break;
-                    case "*":
-                        stack.Push(first * second);
-                        break;
-                    case "/":
-                        if (second == 0)
-                        {
-                            result = 0;
-                            return false;
-                        }
-                        stack.Push(first / second);
-                        break;
+                    if (stack.Count < 2)
+                    {
+                        result = 0;
+                        return false;
+                    }
+
+                    var second = stack.Pop();
+                    var first = stack.Pop();
+
+                    switch (token)
+                    {
+                        case "+":
+                            stack.Push(first + second);
+                            break;
+                        case "-":
+                            stack.Push(first - second);
+                            break;
+                        case "*":
+                            stack.Push(first * second);
+                            break;
+                        case "/":
+                            if (second == 0)
+                            {
+                                result = 0;
+                                return false;
+                            }
+                            stack.Push(first / second);
+                            break;
+                    }
                 }
             }
-        }
 
-        if (stack.Count != 1)
+            if (stack.Count != 1)
+            {
+                result = 0;
+                return false;
+            }
+
+            result = stack.Pop();
+            return true;
+        }
+        catch
         {
             result = 0;
             return false;
         }
 
-        result = stack.Pop();
-        return true;
     }
 }
