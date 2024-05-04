@@ -1,0 +1,48 @@
+
+<div class="container">
+  <h1>Server Calculator <a href="mailto:tgralex@gmail.com" class="small-note">by Tigran</a></h1>
+  <h3 class="title" (click)="toggleFaking()" title="Click to toggle service faking">{{ title}}</h3>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="input-group">
+        <span class="input-group-text btn btn-secondary input-checkbox" title="Check to clear input after each calculation">
+          <input class="input-group-text btn-defaault" type="checkbox" [(ngModel)]="cleareExporessionOnCalculate">
+        </span>
+        <input type="search"
+               list="predefinedList"
+               class="form-control"
+               [placeholder]="inputPlaceholder"
+               [title]="inputPlaceholder"
+               (keyup.enter)="calculate()"
+               [(ngModel)]="expression"
+               #expressionInput>
+        <datalist id="predefinedList">
+          <option *ngFor="let el of predefinedList">{{el}}</option>
+        </datalist>
+        <span class="input-group-text btn btn-primary"
+              title="Click to calculate the expression. Calculation result will appear below."
+              (click)="calculate()">Calculate</span>
+        <span class="input-group-text btn btn-secondary"
+              title="Clears all existing calculation results."
+              (click)="clear()">Clear History</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12"
+         *ngFor="let el of history">
+      <div (click)="readFrom(el)" class="history-div {{el.cssClass}}" title="Click to reuse">
+        <label class="equation-element">{{el.expression}}</label>
+        <span class="equation-element bg-primary text-white">=</span>
+        <div class="equation-element spinner-border spinner-border-sm" *ngIf="el.callInProgress"></div>
+        <span class="equation-element" [title]="el.title" *ngIf="!el.callInProgress">
+          {{el.calculationResult ?? el.title}}
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!--<h3>{{isClearingInput}}</h3>-->
