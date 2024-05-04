@@ -25,7 +25,8 @@ finally
 void BuildServicesAndApp()
 {
     var builder = WebApplication.CreateBuilder(args);
-   
+    builder.Host.UseNLog();
+
     BuildServices(builder);
 
     var app = builder.Build();
@@ -47,16 +48,16 @@ void BuildServices(IHostApplicationBuilder builder)
     AddCorsServiceForDevelopment(services);
     AddIpRateLimitationService(services);
 
-    services.AddHttpLogging(logging => { logger.Info("logging");});
-    //{
-    //    logging.LoggingFields = HttpLoggingFields.All;
-    //    logging.RequestHeaders.Add("sec-ch-ua");
-    //    logging.ResponseHeaders.Add("MyResponseHeader");
-    //    logging.MediaTypeOptions.AddText("application/javascript");
-    //    logging.RequestBodyLogLimit = 4096;
-    //    logging.ResponseBodyLogLimit = 4096;
-    //    logging.CombineLogs = true;
-    //});
+    services.AddHttpLogging(logging =>
+    {
+        logging.LoggingFields = HttpLoggingFields.All;
+        logging.RequestHeaders.Add("sec-ch-ua");
+        logging.ResponseHeaders.Add("MyResponseHeader");
+        logging.MediaTypeOptions.AddText("application/javascript");
+        logging.RequestBodyLogLimit = 4096;
+        logging.ResponseBodyLogLimit = 4096;
+        logging.CombineLogs = true;
+    });
 }
 
 void AddCorsServiceForDevelopment(IServiceCollection services)
