@@ -57,7 +57,7 @@ void BuildServices(IHostApplicationBuilder builder)
     services.AddSwaggerGen();
 
     AddCorsServiceForDevelopment(services);
-    AddIpRateLimitationService(services);
+    AddIpRateLimitationService(services, builder);
 
     services.AddHttpLogging(logging =>
     {
@@ -88,7 +88,7 @@ void AddCorsServiceForDevelopment(IServiceCollection services)
     });
 }
 
-void AddIpRateLimitationService(IServiceCollection services)
+void AddIpRateLimitationService(IServiceCollection services, IHostApplicationBuilder builder)
 {
     // Adding IP Rate Limitation (requires MemoryCache)
     services.AddMemoryCache();
@@ -99,14 +99,21 @@ void AddIpRateLimitationService(IServiceCollection services)
         options.HttpStatusCode = 429;
         options.RealIpHeader = "X-Real-IP";
         options.ClientIdHeader = "X-ClientId";
+        var perPeriod = builder.Configuration["IpRateLimitOptions:PerPeriod"];
+        var strLimit = builder.Configuration["IpRateLimitOptions:Limit"];
+        int.TryParse(strLimit, out var limit);
+        if (limit == 0)
+        {
+            limit = 1;
+        }
         options.GeneralRules = new List<RateLimitRule>
         {
             // one request per second
             new()
             {
                 Endpoint = "PUT:/api/Calculate",
-                Period = "1s",
-                Limit = 1,
+                Period = perPeriod,
+                Limit = limit 
             }
         };
     });
