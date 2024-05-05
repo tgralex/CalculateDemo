@@ -1,6 +1,0 @@
-@CalculateDemo.Server_HostAddress = http://localhost:5280
-
-GET {{CalculateDemo.Server_HostAddress}}/api/calculate
-Accept: application/json
-
-###
