@@ -25,7 +25,12 @@
         <span class="input-group-text btn btn-secondary"
               title="Clears all existing calculation results."
               (click)="clear()">Clear History</span>
+        <span class="input-group-text btn btn-warning"
+              *ngIf="expression && expression.length > 0 && expression.length <= 100"
+              title="Repeats entered expression 1000 times joining it with + sign (expression's length must be greater than 0  and less or equal to 100)"
+              (click)="expandExpressionValue()">x1000</span>
       </div>
+      <label>Chars count: {{expression?.length ?? 0 | number:'1.0':'en-US'}}</label>
     </div>
   </div>
 
@@ -33,7 +38,7 @@
     <div class="col-sm-12"
          *ngFor="let el of history">
       <div (click)="readFrom(el)" class="history-div {{el.cssClass}}" title="Click to reuse">
-        <label class="equation-element">{{el.expression}}</label>
+        <div class="equation-element equation-expression" [title]="el.expression">{{el.expression}}</div>
         <span class="equation-element bg-primary text-white">=</span>
         <div class="equation-element spinner-border spinner-border-sm" *ngIf="el.callInProgress"></div>
         <span class="equation-element" [title]="el.title" *ngIf="!el.callInProgress">

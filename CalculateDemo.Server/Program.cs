@@ -2,12 +2,15 @@ using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpLogging;
 using NLog;
 using NLog.Web;
+using Microsoft.AspNetCore.Http.Features;
+using static System.Net.Mime.MediaTypeNames;
 
 const string allowCorsOnDevelopmentName = nameof(allowCorsOnDevelopmentName);
 var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 logger.Debug("Application has started");
 try
 {
+    logger.Info($".Net version: {Environment.Version}");
     BuildServicesAndApp();
 }
 catch (Exception exception)
@@ -20,6 +23,16 @@ finally
     logger.Debug("Application has ended");
     LogManager.Shutdown();
 }
+
+int GetConfigValueOrDefault(IHostApplicationBuilder builder, string path, int defaultValue)
+{
+    if (int.TryParse(builder.Configuration[path], out var result))
+    {
+        return result;
+    }
+
+    return defaultValue;
+}
 void BuildServicesAndApp()
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -28,16 +41,11 @@ void BuildServicesAndApp()
         .WebHost
         .ConfigureKestrel(serverOptions =>
         {
-            var strSize = builder.Configuration["FormOptions:MultipartBodyLengthLimit"];
-            long.TryParse(strSize, out var size);
-            if (size == 0)
-            {
-                size = 10_000;
-            }
-
-            serverOptions.Limits.MaxRequestBodySize = size;
+            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(1);
+            serverOptions.Limits.MaxConcurrentConnections = 100;
+            serverOptions.Limits.MaxRequestBodySize = GetConfigValueOrDefault(builder, "FormOptions:MultipartBodyLengthLimit", 10000);
+            logger.Info($"MaxRequestBodySize is set to: {serverOptions.Limits.MaxRequestBodySize}");
         });
-
     BuildServices(builder);
 
     var app = builder.Build();
@@ -68,6 +76,7 @@ void BuildServices(IHostApplicationBuilder builder)
         logging.RequestBodyLogLimit = 4096;
         logging.ResponseBodyLogLimit = 4096;
         logging.CombineLogs = true;
+        logger.Info("Http logging is enabled");
     });
 }
 
@@ -100,12 +109,7 @@ void AddIpRateLimitationService(IServiceCollection services, IHostApplicationBui
         options.RealIpHeader = "X-Real-IP";
         options.ClientIdHeader = "X-ClientId";
         var perPeriod = builder.Configuration["IpRateLimitOptions:PerPeriod"];
-        var strLimit = builder.Configuration["IpRateLimitOptions:Limit"];
-        int.TryParse(strLimit, out var limit);
-        if (limit == 0)
-        {
-            limit = 1;
-        }
+        var limit = GetConfigValueOrDefault(builder, "IpRateLimitOptions:Limit", 10000);
         options.GeneralRules = new List<RateLimitRule>
         {
             // one request per second
@@ -116,6 +120,7 @@ void AddIpRateLimitationService(IServiceCollection services, IHostApplicationBui
                 Limit = limit 
             }
         };
+        logger.Info($"RateLimitRule is set to: {limit} per {perPeriod}");
     });
     services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
     services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
@@ -134,15 +139,32 @@ void BuildApp(WebApplication app)
     {
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseCors(allowCorsOnDevelopmentName);
     }
 
     app.UseAuthorization();
     app.MapControllers();
     app.MapFallbackToFile("/index.html");
 
+    // handling payload size
+    app.Use(async (context, next) =>
+    {
+        var httpMaxRequestBodySizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (httpMaxRequestBodySizeFeature is not null && context.Request.ContentLength > httpMaxRequestBodySizeFeature.MaxRequestBodySize)
+        {
+            context.Response.ContentType = Text.Plain;
+            context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            await context.Response.WriteAsync("Request is too long");
+        }
+        else
+        {
+            await next(context);
+        }
+    });
+
+
     // Ensures that HTTPS is the only protocol allowed
     app.UseHttpsRedirection();
-    app.UseCors(allowCorsOnDevelopmentName);
     app.UseIpRateLimiting();
     app.UseHttpLogging();
 }
