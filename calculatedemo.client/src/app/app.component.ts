@@ -46,8 +46,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     else {
       this.history.unshift(new CalculationExt(this.expression, this.apiService));
-      this.predefinedList = this.predefinedList.filter(x => x !== this.expression);
-      this.predefinedList.unshift(this.expression);
+      if (this.expression.length <= 100) {
+        this.predefinedList = this.predefinedList.filter(x => x !== this.expression);
+        this.predefinedList.unshift(this.expression);
+      }
+      else {
+        this.showToast("History", "Expression was not save to the drop down list due to its length, but still available on the screen", "info");
+      }
     }
     if (this.cleareExporessionOnCalculate) {
       this.expression = "";
@@ -94,7 +99,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  expandExpressionValue() {
+    this.expression = Array(1000).fill(this.expression).join(' + ');
+  }
 }
-
-
-

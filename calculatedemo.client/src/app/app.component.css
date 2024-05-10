@@ -7,6 +7,14 @@
 
 .equation-element {
   margin-left: 10px !important;
+  word-break: normal;
+  overflow: hidden;
+  max-width:98%;
+}
+
+.equation-expression {
+  overflow-y: auto;
+  max-height: 100px;
 }
 
 .history-div {
