@@ -27,8 +27,12 @@
               (click)="clear()">Clear History</span>
         <span class="input-group-text btn btn-warning"
               *ngIf="expression && expression.length > 0 && expression.length <= 100"
-              title="Repeats entered expression 1000 times joining it with + sign (expression's length must be greater than 0  and less or equal to 100)"
-              (click)="expandExpressionValue()">x1000</span>
+              title="Click to repeat the expression you entered 1000 times, joining each repetition with a plus sign. &#10;Note that the length of the expression must be greater than 0 and less than or equal to 100"
+              (click)="expandExpressionValue()"
+              (mouseenter)="isHoverOver = true"
+              (mouseleave)="isHoverOver = false">
+          {{ isHoverOver ? "I'm feeling adventurous!" : "x 1000"}}
+        </span>
       </div>
       <label>Chars count: {{expression?.length ?? 0 | number:'1.0':'en-US'}}</label>
     </div>

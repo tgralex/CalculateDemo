@@ -27,6 +27,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     "(10 + 5) * 10 + Ln(10)",
     "(10 + 5) * 10 + 3x"
   ]
+  isHoverOver = false;
   public get title() {
     return this.apiService.isFaking
       ? "Calculations are faked"
@@ -51,7 +52,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.predefinedList.unshift(this.expression);
       }
       else {
-        this.showToast("History", "Expression was not save to the drop down list due to its length, but still available on the screen", "info");
+        this.showToast("History", "The expression was not saved to the drop-down list due to its length, but it is still available on the screen for your review and reuse", "info");
       }
     }
     if (this.cleareExporessionOnCalculate) {
@@ -101,5 +102,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   expandExpressionValue() {
     this.expression = Array(1000).fill(this.expression).join(' + ');
+    this.isHoverOver = false;
   }
 }
